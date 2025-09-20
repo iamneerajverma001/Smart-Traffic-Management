@@ -1,0 +1,74 @@
+// Traffic light control for 4 routes - 2 LEDs each (RED and GREEN per route)
+// Controlled via serial commands: "<pin>:<state>\n"
+// Pins: 2-9 (2,4,6,8 = RED; 3,5,7,9 = GREEN)
+
+const int pins[] = {2,3,4,5,6,7,8,9}; // 4 routes, 2 pins each
+
+void setup() {
+  Serial.begin(9600);
+  delay(2000); // Wait for serial connection
+
+  for (int i = 0; i < sizeof(pins)/sizeof(pins[0]); i++) {
+    pinMode(pins[i], OUTPUT);
+    digitalWrite(pins[i], LOW);
+  }
+
+  Serial.println("Ready"); // Handshake signal
+}
+
+void loop() {
+  static char buffer[32];
+  static byte index = 0;
+
+  while (Serial.available() > 0) {
+    char c = Serial.read();
+    if (c == '\n' || c == '\r') {
+      if (index > 0) {
+        buffer[index] = 0; // Null terminate
+        processCommand(buffer);
+        index = 0;
+      }
+    } else {
+      if (index < sizeof(buffer) - 1) {
+        buffer[index++] = c;
+      }
+    }
+  }
+}
+
+void processCommand(char *cmd) {
+  char *colon = strchr(cmd, ':');
+  if (!colon) {
+    Serial.println("ERR: Invalid command");
+    return;
+  }
+
+  *colon = 0; // split string
+  int pin = atoi(cmd);
+  int state = atoi(colon + 1);
+
+  if (!isValidPin(pin)) {
+    Serial.print("ERR: Invalid pin ");
+    Serial.println(pin);
+    return;
+  }
+
+  if (state != 0 && state != 1) {
+    Serial.print("ERR: Invalid state ");
+    Serial.println(state);
+    return;
+  }
+
+  digitalWrite(pin, state);
+  Serial.print("Set pin ");
+  Serial.print(pin);
+  Serial.print(" to ");
+  Serial.println(state);
+}
+
+bool isValidPin(int pin) {
+  for (int i = 0; i < sizeof(pins)/sizeof(pins[0]); i++) {
+    if (pins[i] == pin) return true;
+  }
+  return false;
+}
