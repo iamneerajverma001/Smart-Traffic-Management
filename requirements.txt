@@ -1,0 +1,10 @@
+torch
+opencv-python
+tqdm
+seaborn
+gitpython
+ultralytics
+PyQt5
+numpy
+pytesseract
+playsound
